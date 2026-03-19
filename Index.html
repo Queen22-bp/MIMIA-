@@ -1,1 +1,120 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>MiMia</title>
 
+<style>
+body {
+  font-family: Arial;
+  background: #0f172a;
+  color: white;
+  text-align: center;
+}
+input, button {
+  padding: 10px;
+  margin: 5px;
+  border-radius: 10px;
+  border: none;
+}
+button {
+  background: #38bdf8;
+}
+.hidden {
+  display: none;
+}
+.post {
+  background: #1e293b;
+  margin: 10px;
+  padding: 10px;
+  border-radius: 10px;
+}
+</style>
+
+</head>
+<body>
+
+<h1>🔥 MiMia</h1>
+
+<!-- LOGIN -->
+<div id="login">
+  <h2>Connexion</h2>
+  <input id="username" placeholder="Nom d'utilisateur"><br>
+  <button onclick="login()">Entrer</button>
+</div>
+
+<!-- APP -->
+<div id="app" class="hidden">
+
+  <h2 id="welcome"></h2>
+
+  <input id="message" placeholder="Écris un message..."><br>
+  <button onclick="poster()">Envoyer</button>
+
+  <div id="feed"></div>
+
+</div>
+
+<!-- FIREBASE -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<script>
+
+// 🔥 REMPLACE JUSTE ICI AVEC TES INFOS FIREBASE
+const firebaseConfig = {
+  apiKey: "COLLE_API_KEY_ICI",
+  authDomain: "COLLE_AUTHDOMAIN_ICI",
+  projectId: "COLLE_PROJECTID_ICI"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+let user = "";
+
+// LOGIN
+function login() {
+  user = document.getElementById("username").value;
+  if (user === "") return;
+
+  document.getElementById("login").classList.add("hidden");
+  document.getElementById("app").classList.remove("hidden");
+
+  document.getElementById("welcome").innerText = "Bienvenue " + user;
+}
+
+// ENVOYER MESSAGE
+function poster() {
+  let msg = document.getElementById("message").value;
+  if (msg === "") return;
+
+  db.collection("messages").add({
+    text: msg,
+    user: user,
+    time: Date.now()
+  });
+
+  document.getElementById("message").value = "";
+}
+
+// RECEVOIR MESSAGES
+db.collection("messages").orderBy("time")
+.onSnapshot(snapshot => {
+  document.getElementById("feed").innerHTML = "";
+
+  snapshot.forEach(doc => {
+    let data = doc.data();
+
+    let post = document.createElement("div");
+    post.className = "post";
+    post.innerText = data.user + " : " + data.text;
+
+    document.getElementById("feed").prepend(post);
+  });
+});
+
+</script>
+
+</body>
+</html>

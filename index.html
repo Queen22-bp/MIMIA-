@@ -1,15 +1,14 @@
 <!DOCTYPE html><html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>MiMia Firebase</title>  <!-- Firebase CDN --><script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>  <br><br>
+  <title>MiMia Firebase</title>  <!-- Firebase CDN -->  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script></head><body><h2>MiMia 🔐 Firebase</h2><!-- Champs --><input type="email" id="email" placeholder="Email"><br><br>
 <input type="password" id="password" placeholder="Mot de passe"><br><br>
 
-<button onclick="register()">Créer compte</button>
+<!-- Boutons --><button onclick="register()">Créer compte</button>
 <button onclick="login()">Se connecter</button>
 
-<p id="msg"></p><script>
-  // 👉 TON CONFIG (adapté)
+<!-- Message --><p id="msg"></p><script>
+  // Configuration Firebase
   const firebaseConfig = {
     apiKey: "AIzaSyCsTZdce8EnHNc3za9BX6AJnfTOCqcCQf0",
     authDomain: "mi-mia.firebaseapp.com",
@@ -19,10 +18,11 @@
     appId: "1:871745901536:web:cc3e037b967094942ed185"
   };
 
-  // Initialisation
-  const app = firebase.initializeApp(firebaseConfig);
+  // Initialisation Firebase
+  firebase.initializeApp(firebaseConfig);
   const auth = firebase.auth();
 
+  // Créer compte
   function register() {
     let email = document.getElementById("email").value;
     let password = document.getElementById("password").value;
@@ -31,11 +31,12 @@
       .then(() => {
         document.getElementById("msg").innerText = "Compte créé ✅";
       })
-      .catch(e => {
-        document.getElementById("msg").innerText = e.message;
+      .catch(error => {
+        document.getElementById("msg").innerText = error.message;
       });
   }
 
+  // Connexion
   function login() {
     let email = document.getElementById("email").value;
     let password = document.getElementById("password").value;
@@ -44,8 +45,8 @@
       .then(() => {
         document.getElementById("msg").innerText = "Connecté ✅";
       })
-      .catch(e => {
-        document.getElementById("msg").innerText = e.message;
+      .catch(error => {
+        document.getElementById("msg").innerText = error.message;
       });
   }
 </script></body>

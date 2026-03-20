@@ -2,33 +2,83 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>MiMia Firebase</title>
+  <title>MiMia 💬</title>
 
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+
+  <style>
+    body {
+      font-family: Arial;
+      text-align: center;
+      background: #f2f2f2;
+    }
+
+    input, button {
+      padding: 10px;
+      margin: 5px;
+      width: 80%;
+      max-width: 300px;
+    }
+
+    #chat {
+      margin-top: 20px;
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
+      text-align: left;
+    }
+
+    .message {
+      padding: 10px;
+      margin: 5px;
+      border-radius: 10px;
+      max-width: 70%;
+    }
+
+    .me {
+      background: #4CAF50;
+      color: white;
+      margin-left: auto;
+      text-align: right;
+    }
+
+    .other {
+      background: #ddd;
+      margin-right: auto;
+    }
+
+    img {
+      margin-top: 5px;
+      border-radius: 10px;
+      max-width: 100%;
+    }
+  </style>
 </head>
 
 <body>
 
-  <h2>MiMia 🔐 Firebase</h2>
+  <h2>MiMia 💬</h2>
 
-  <!-- Connexion -->
-  <input type="email" id="email" placeholder="Email"><br><br>
-  <input type="password" id="password" placeholder="Mot de passe"><br><br>
+  <!-- AUTH -->
+  <input type="email" id="email" placeholder="Email"><br>
+  <input type="password" id="password" placeholder="Mot de passe"><br>
 
   <button onclick="register()">Créer compte</button>
   <button onclick="login()">Se connecter</button>
+  <button onclick="logout()">Déconnexion</button>
 
   <p id="msg"></p>
 
   <hr>
 
-  <!-- Chat -->
-  <h3>Chat 💬</h3>
+  <!-- CHAT -->
+  <input type="text" id="message" placeholder="Ton message"><br>
+  <input type="file" id="imageInput"><br>
 
-  <input type="text" id="message" placeholder="Ton message">
   <button onclick="sendMessage()">Envoyer</button>
 
   <div id="chat"></div>
@@ -44,73 +94,104 @@
       appId: "1:871745901536:web:cc3e037b967094942ed185"
     };
 
-    // 🔥 INITIALISATION
     firebase.initializeApp(firebaseConfig);
 
     const auth = firebase.auth();
     const db = firebase.firestore();
+    const storage = firebase.storage();
 
-    // 🔐 CRÉER COMPTE
+    // 🔐 REGISTER
     function register() {
       let email = document.getElementById("email").value;
       let password = document.getElementById("password").value;
 
       auth.createUserWithEmailAndPassword(email, password)
-        .then(() => {
-          document.getElementById("msg").innerText = "Compte créé ✅";
-        })
-        .catch(error => {
-          document.getElementById("msg").innerText = error.message;
-        });
+        .then(() => msg("Compte créé ✅"))
+        .catch(e => msg(e.message));
     }
 
-    // 🔑 CONNEXION
+    // 🔑 LOGIN
     function login() {
       let email = document.getElementById("email").value;
       let password = document.getElementById("password").value;
 
       auth.signInWithEmailAndPassword(email, password)
-        .then(() => {
-          document.getElementById("msg").innerText = "Connecté ✅";
-        })
-        .catch(error => {
-          document.getElementById("msg").innerText = error.message;
-        });
+        .then(() => msg("Connecté ✅"))
+        .catch(e => msg(e.message));
     }
 
-    // 💬 ENVOYER MESSAGE
+    // 🚪 LOGOUT
+    function logout() {
+      auth.signOut().then(() => msg("Déconnecté 🚪"));
+    }
+
+    // 💬 SEND MESSAGE + IMAGE
     function sendMessage() {
       let message = document.getElementById("message").value;
+      let file = document.getElementById("imageInput").files[0];
+      let user = auth.currentUser;
 
-      const user = auth.currentUser;
+      if (!user) {
+        msg("Connecte-toi d'abord ❗");
+        return;
+      }
 
-      if (user) {
+      if (file) {
+        let ref = storage.ref("images/" + file.name);
+
+        ref.put(file).then(snapshot => {
+          snapshot.ref.getDownloadURL().then(url => {
+
+            db.collection("messages").add({
+              text: message,
+              imageUrl: url,
+              email: user.email,
+              date: new Date()
+            });
+
+          });
+        });
+
+      } else {
         db.collection("messages").add({
           text: message,
           email: user.email,
           date: new Date()
         });
-
-        document.getElementById("message").value = "";
-      } else {
-        document.getElementById("msg").innerText = "Connecte-toi d'abord ❗";
       }
+
+      document.getElementById("message").value = "";
+      document.getElementById("imageInput").value = "";
     }
 
-    // 📥 AFFICHER MESSAGES
+    // 📥 AFFICHAGE
     db.collection("messages").orderBy("date", "asc")
       .onSnapshot(snapshot => {
         let html = "";
+        let user = auth.currentUser;
 
         snapshot.forEach(doc => {
           let data = doc.data();
-          html += `<p><b>${data.email}:</b> ${data.text}</p>`;
+          let classe = (user && data.email === user.email) ? "me" : "other";
+
+          html += `<div class="message ${classe}">
+                    <b>${data.email}</b><br>
+                    ${data.text || ""}<br>`;
+
+          if (data.imageUrl) {
+            html += `<img src="${data.imageUrl}">`;
+          }
+
+          html += `</div>`;
         });
 
         document.getElementById("chat").innerHTML = html;
       });
 
+    function msg(text) {
+      document.getElementById("msg").innerText = text;
+    }
   </script>
 
 </body>
-  </html>
+</html>

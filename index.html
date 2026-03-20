@@ -6,7 +6,13 @@
 
 <!-- Boutons --><button onclick="register()">Créer compte</button>
 <button onclick="login()">Se connecter</button>
+<br><br>
+<input type="text" id="message" placeholder="Ton message">
+<button onclick="sendMessage()">Envoyer</button>
 
+<br><br>
+<h3>Chat 💬</h3>
+<div id="chat"></div>
 <!-- Message --><p id="msg"></p><script>
   // Configuration Firebase
   const firebaseConfig = {

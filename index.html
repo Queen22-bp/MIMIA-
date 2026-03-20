@@ -1,80 +1,51 @@
 <!DOCTYPE html><html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>MiMia - Login</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">  <style>
-    body {
-      margin: 0;
-      font-family: Arial;
-      background: linear-gradient(135deg, #6C63FF, #00C9A7);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      color: white;
-    }
+  <title>MiMia Firebase</title>  <!-- Firebase CDN -->  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"></script></head><body><h2>MiMia 🔐 Firebase</h2><input type="email" id="email" placeholder="Email"><br><br>
+<input type="password" id="password" placeholder="Mot de passe"><br><br>
 
-    .box {
-      background: rgba(0,0,0,0.2);
-      padding: 30px;
-      border-radius: 15px;
-      text-align: center;
-      width: 300px;
-    }
+<button onclick="register()">Créer compte</button>
+<button onclick="login()">Se connecter</button>
 
-    input {
-      width: 100%;
-      padding: 10px;
-      margin: 10px 0;
-      border: none;
-      border-radius: 8px;
-    }
+<p id="msg"></p><script>
+  // 👉 TON CONFIG (adapté)
+  const firebaseConfig = {
+    apiKey: "AIzaSyCsTZdce8EnHNc3za9BX6AJnfTOCqcCQf0",
+    authDomain: "mi-mia.firebaseapp.com",
+    projectId: "mi-mia",
+    storageBucket: "mi-mia.firebasestorage.app",
+    messagingSenderId: "871745901536",
+    appId: "1:871745901536:web:cc3e037b967094942ed185"
+  };
 
-    button {
-      padding: 10px;
-      width: 100%;
-      border: none;
-      border-radius: 8px;
-      background: white;
-      color: #333;
-      cursor: pointer;
-      margin-top: 10px;
-    }
+  // Initialisation
+  const app = firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
 
-    button:hover {
-      background: #ddd;
-    }
+  function register() {
+    let email = document.getElementById("email").value;
+    let password = document.getElementById("password").value;
 
-    #home {
-      display: none;
-      text-align: center;
-    }
-  </style></head><body>  <!-- LOGIN -->  <div class="box" id="loginBox">
-    <h2>Connexion MiMia 🔐</h2>
-    <input type="text" id="username" placeholder="Nom d'utilisateur">
-    <input type="password" id="password" placeholder="Mot de passe">
-    <button onclick="login()">Se connecter</button>
-  </div>  <!-- HOME -->  <div id="home">
-    <h1>Bienvenue 👋</h1>
-    <p id="userDisplay"></p>
-    <button onclick="logout()">Se déconnecter</button>
-  </div>  <script>
-    function login() {
-      let user = document.getElementById("username").value;
-      let pass = document.getElementById("password").value;
+    auth.createUserWithEmailAndPassword(email, password)
+      .then(() => {
+        document.getElementById("msg").innerText = "Compte créé ✅";
+      })
+      .catch(e => {
+        document.getElementById("msg").innerText = e.message;
+      });
+  }
 
-      if(user === "admin" && pass === "1234") {
-        document.getElementById("loginBox").style.display = "none";
-        document.getElementById("home").style.display = "block";
-        document.getElementById("userDisplay").innerText = "Connecté en tant que " + user;
-      } else {
-        alert("Identifiants incorrects ❌");
-      }
-    }
+  function login() {
+    let email = document.getElementById("email").value;
+    let password = document.getElementById("password").value;
 
-    function logout() {
-      document.getElementById("home").style.display = "none";
-      document.getElementById("loginBox").style.display = "block";
-    }
-  </script></body>
+    auth.signInWithEmailAndPassword(email, password)
+      .then(() => {
+        document.getElementById("msg").innerText = "Connecté ✅";
+      })
+      .catch(e => {
+        document.getElementById("msg").innerText = e.message;
+      });
+  }
+</script></body>
 </html>

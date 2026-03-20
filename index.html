@@ -1,197 +1,236 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <title>MiMia 💬</title>
+<meta charset="UTF-8">
+<title>MiMia 💬</title>
 
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+<!-- Firebase -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
 
-  <style>
-    body {
-      font-family: Arial;
-      text-align: center;
-      background: #f2f2f2;
-    }
+<style>
+body {
+  font-family: Arial;
+  background: #e5ddd5;
+  text-align: center;
+}
 
-    input, button {
-      padding: 10px;
-      margin: 5px;
-      width: 80%;
-      max-width: 300px;
-    }
+input, button {
+  padding: 10px;
+  margin: 5px;
+  width: 90%;
+  max-width: 400px;
+}
 
-    #chat {
-      margin-top: 20px;
-      max-width: 400px;
-      margin-left: auto;
-      margin-right: auto;
-      text-align: left;
-    }
+button {
+  background: #075e54;
+  color: white;
+  border: none;
+  border-radius: 5px;
+}
 
-    .message {
-      padding: 10px;
-      margin: 5px;
-      border-radius: 10px;
-      max-width: 70%;
-    }
+#chat {
+  max-width: 500px;
+  margin: auto;
+  text-align: left;
+}
 
-    .me {
-      background: #4CAF50;
-      color: white;
-      margin-left: auto;
-      text-align: right;
-    }
+.msg {
+  background: white;
+  padding: 10px;
+  margin: 10px;
+  border-radius: 10px;
+}
 
-    .other {
-      background: #ddd;
-      margin-right: auto;
-    }
+.me {
+  background: #dcf8c6;
+  margin-left: auto;
+}
 
-    img {
-      margin-top: 5px;
-      border-radius: 10px;
-      max-width: 100%;
-    }
-  </style>
+img {
+  max-width: 100%;
+  border-radius: 10px;
+}
+</style>
 </head>
 
 <body>
 
-  <h2>MiMia 💬</h2>
+<h2>MiMia 💬</h2>
 
-  <!-- AUTH -->
-  <input type="email" id="email" placeholder="Email"><br>
-  <input type="password" id="password" placeholder="Mot de passe"><br>
+<input id="email" type="email" placeholder="Email"><br>
+<input id="password" type="password" placeholder="Mot de passe"><br>
 
-  <button onclick="register()">Créer compte</button>
-  <button onclick="login()">Se connecter</button>
-  <button onclick="logout()">Déconnexion</button>
+<button onclick="register()">Créer compte</button>
+<button onclick="login()">Se connecter</button>
+<button onclick="logout()">Déconnexion</button>
 
-  <p id="msg"></p>
+<p id="status"></p>
 
-  <hr>
+<hr>
 
-  <!-- CHAT -->
-  <input type="text" id="message" placeholder="Ton message"><br>
-  <input type="file" id="imageInput"><br>
+<input id="message" placeholder="Ton message"><br>
+<input type="file" id="file"><br>
 
-  <button onclick="sendMessage()">Envoyer</button>
+<button onclick="sendMessage()">Envoyer</button>
 
-  <div id="chat"></div>
+<hr>
 
-  <script>
-    // 🔥 CONFIG FIREBASE
-    const firebaseConfig = {
-      apiKey: "AIzaSyCsTZdce8EnHNc3za9BX6AJnfTOCqcCQf0",
-      authDomain: "mi-mia.firebaseapp.com",
-      projectId: "mi-mia",
-      storageBucket: "mi-mia.firebasestorage.app",
-      messagingSenderId: "871745901536",
-      appId: "1:871745901536:web:cc3e037b967094942ed185"
-    };
+<input id="privateEmail" placeholder="Email ami"><br>
+<button onclick="sendPrivate()">Message privé</button>
 
-    firebase.initializeApp(firebaseConfig);
+<div id="chat"></div>
 
-    const auth = firebase.auth();
-    const db = firebase.firestore();
-    const storage = firebase.storage();
+<script>
+/* 🔥 CONFIG FIREBASE */
+firebase.initializeApp({
+  apiKey: "AIzaSyCsTZdce8EnHNc3za9BX6AJnfTOCqcCQf0",
+  authDomain: "mi-mia.firebaseapp.com",
+  projectId: "mi-mia",
+  storageBucket: "mi-mia.firebasestorage.app",
+  messagingSenderId: "871745901536",
+  appId: "1:871745901536:web:cc3e037b967094942ed185"
+});
 
-    // 🔐 REGISTER
-    function register() {
-      let email = document.getElementById("email").value;
-      let password = document.getElementById("password").value;
+const auth = firebase.auth();
+const db = firebase.firestore();
+const storage = firebase.storage();
 
-      auth.createUserWithEmailAndPassword(email, password)
-        .then(() => msg("Compte créé ✅"))
-        .catch(e => msg(e.message));
-    }
+let user = null;
 
-    // 🔑 LOGIN
-    function login() {
-      let email = document.getElementById("email").value;
-      let password = document.getElementById("password").value;
+/* 🔐 AUTH */
+auth.onAuthStateChanged(u => {
+  user = u;
 
-      auth.signInWithEmailAndPassword(email, password)
-        .then(() => msg("Connecté ✅"))
-        .catch(e => msg(e.message));
-    }
+  if (u) {
+    status.innerText = "Connecté : " + u.email;
+    loadMessages();
+  }
+});
 
-    // 🚪 LOGOUT
-    function logout() {
-      auth.signOut().then(() => msg("Déconnecté 🚪"));
-    }
+/* 🔑 REGISTER */
+function register() {
+  auth.createUserWithEmailAndPassword(email.value, password.value)
+  .catch(e => alert(e.message));
+}
 
-    // 💬 SEND MESSAGE + IMAGE
-    function sendMessage() {
-      let message = document.getElementById("message").value;
-      let file = document.getElementById("imageInput").files[0];
-      let user = auth.currentUser;
+/* 🔑 LOGIN */
+function login() {
+  auth.signInWithEmailAndPassword(email.value, password.value)
+  .catch(e => alert(e.message));
+}
 
-      if (!user) {
-        msg("Connecte-toi d'abord ❗");
-        return;
-      }
+/* 🚪 LOGOUT */
+function logout() {
+  auth.signOut();
+}
 
-      if (file) {
-        let ref = storage.ref("images/" + file.name);
+/* 🔐 ENCRYPTION SIMPLE */
+function encrypt(t) {
+  return btoa(t);
+}
 
-        ref.put(file).then(snapshot => {
-          snapshot.ref.getDownloadURL().then(url => {
+function decrypt(t) {
+  return atob(t);
+}
 
-            db.collection("messages").add({
-              text: message,
-              imageUrl: url,
-              email: user.email,
-              date: new Date()
-            });
+/* 💬 ENVOI MESSAGE */
+function sendMessage() {
+  if (!user) return;
 
-          });
-        });
+  let text = encrypt(message.value);
+  let file = document.getElementById("file").files[0];
 
-      } else {
+  if (!text && !file) return;
+
+  if (file) {
+    let ref = storage.ref("images/" + file.name);
+
+    ref.put(file).then(s => {
+      s.ref.getDownloadURL().then(url => {
         db.collection("messages").add({
-          text: message,
+          text,
+          image: url,
           email: user.email,
-          date: new Date()
+          date: Date.now(),
+          likes: []
         });
+      });
+    });
+  } else {
+    db.collection("messages").add({
+      text,
+      email: user.email,
+      date: Date.now(),
+      likes: []
+    });
+  }
+
+  message.value = "";
+}
+
+/* 📥 CHARGEMENT */
+function loadMessages() {
+  db.collection("messages")
+  .orderBy("date", "desc")
+  .limit(20)
+  .onSnapshot(snapshot => {
+
+    let html = "";
+
+    snapshot.forEach(doc => {
+      let d = doc.data();
+      let me = user && d.email === user.email;
+
+      let text = "";
+
+      try {
+        text = decrypt(d.text);
+      } catch {
+        text = d.text;
       }
 
-      document.getElementById("message").value = "";
-      document.getElementById("imageInput").value = "";
-    }
+      html += `<div class="msg ${me ? "me" : ""}">
+        <b>${d.email}</b><br><br>
+        ${text}<br><br>`;
 
-    // 📥 AFFICHAGE
-    db.collection("messages").orderBy("date", "asc")
-      .onSnapshot(snapshot => {
-        let html = "";
-        let user = auth.currentUser;
+      if (d.image) {
+        html += `<img src="${d.image}"><br>`;
+      }
 
-        snapshot.forEach(doc => {
-          let data = doc.data();
-          let classe = (user && data.email === user.email) ? "me" : "other";
+      html += `
+        ❤️ ${(d.likes || []).length}<br>
+        <button onclick="like('${doc.id}')">Like</button>
+      </div>`;
+    });
 
-          html += `<div class="message ${classe}">
-                    <b>${data.email}</b><br>
-                    ${data.text || ""}<br>`;
+    chat.innerHTML = html;
+  });
+}
 
-          if (data.imageUrl) {
-            html += `<img src="${data.imageUrl}">`;
-          }
+/* ❤️ LIKE */
+function like(id) {
+  db.collection("messages").doc(id).update({
+    likes: firebase.firestore.FieldValue.arrayUnion(user.email)
+  });
+}
 
-          html += `</div>`;
-        });
+/* 💌 MESSAGE PRIVÉ */
+function sendPrivate() {
+  if (!user) return;
 
-        document.getElementById("chat").innerHTML = html;
-      });
+  db.collection("privateMessages").add({
+    from: user.email,
+    to: privateEmail.value,
+    text: encrypt(message.value),
+    date: Date.now()
+  });
 
-    function msg(text) {
-      document.getElementById("msg").innerText = text;
-    }
-  </script>
+  message.value = "";
+}
+</script>
 
 </body>
-</html>
+  </html>

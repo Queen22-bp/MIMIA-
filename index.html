@@ -1,48 +1,80 @@
 <!DOCTYPE html><html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <title>MiMia</title>
+  <title>MiMia - Login</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">  <style>
     body {
       margin: 0;
-      font-family: Arial, sans-serif;
+      font-family: Arial;
       background: linear-gradient(135deg, #6C63FF, #00C9A7);
-      color: white;
       display: flex;
       justify-content: center;
       align-items: center;
       height: 100vh;
+      color: white;
     }
 
-    .container {
+    .box {
+      background: rgba(0,0,0,0.2);
+      padding: 30px;
+      border-radius: 15px;
       text-align: center;
+      width: 300px;
     }
 
-    h1 {
-      font-size: 40px;
+    input {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: none;
+      border-radius: 8px;
     }
 
     button {
-      padding: 15px 25px;
+      padding: 10px;
+      width: 100%;
       border: none;
-      border-radius: 10px;
+      border-radius: 8px;
       background: white;
       color: #333;
-      font-size: 16px;
       cursor: pointer;
-      margin-top: 20px;
+      margin-top: 10px;
     }
 
     button:hover {
       background: #ddd;
     }
-  </style></head><body>
-  <div class="container">
-    <h1>Bienvenue sur MiMia 🚀</h1>
-    <p>Ton application est maintenant en ligne !</p>
-    <button onclick="alert('Ça marche parfaitement 😎')">
-      Tester
-    </button>
-  </div>
-</body>
-      </html>
+
+    #home {
+      display: none;
+      text-align: center;
+    }
+  </style></head><body>  <!-- LOGIN -->  <div class="box" id="loginBox">
+    <h2>Connexion MiMia 🔐</h2>
+    <input type="text" id="username" placeholder="Nom d'utilisateur">
+    <input type="password" id="password" placeholder="Mot de passe">
+    <button onclick="login()">Se connecter</button>
+  </div>  <!-- HOME -->  <div id="home">
+    <h1>Bienvenue 👋</h1>
+    <p id="userDisplay"></p>
+    <button onclick="logout()">Se déconnecter</button>
+  </div>  <script>
+    function login() {
+      let user = document.getElementById("username").value;
+      let pass = document.getElementById("password").value;
+
+      if(user === "admin" && pass === "1234") {
+        document.getElementById("loginBox").style.display = "none";
+        document.getElementById("home").style.display = "block";
+        document.getElementById("userDisplay").innerText = "Connecté en tant que " + user;
+      } else {
+        alert("Identifiants incorrects ❌");
+      }
+    }
+
+    function logout() {
+      document.getElementById("home").style.display = "none";
+      document.getElementById("loginBox").style.display = "block";
+    }
+  </script></body>
+</html>

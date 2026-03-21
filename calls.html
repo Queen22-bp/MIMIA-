@@ -2,10 +2,11 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>Appels</title>
+<title>Appels - MiMia</title>
 
-<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
 
 </head>
 
@@ -13,13 +14,10 @@
 
 <h2>📞 Appels</h2>
 
-<video id="localVideo" autoplay muted width="150"></video>
-<video id="remoteVideo" autoplay width="150"></video>
+<button onclick="startCall()">📹 Démarrer appel</button>
 
-<br>
-
-<button onclick="startCall()">Appeler</button>
-<button onclick="answerCall()">Répondre</button>
+<video id="localVideo" autoplay playsinline width="200"></video>
+<video id="remoteVideo" autoplay playsinline width="200"></video>
 
 <script>
 
@@ -32,63 +30,49 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 
 const db = firebase.firestore();
+const auth = firebase.auth();
 
 let pc;
-let stream;
 
-const servers = {
-  iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
-};
+/* 🔐 AUTH */
+auth.onAuthStateChanged(user => {
+  if (!user) window.location.href = "login.html";
+});
 
+/* 📞 APPEL */
 async function startCall() {
 
-  pc = new RTCPeerConnection(servers);
+  pc = new RTCPeerConnection({
+    iceServers: [{ urls: "stun:stun.l.google.com:19302" }]
+  });
 
-  stream = await navigator.mediaDevices.getUserMedia({
+  const stream = await navigator.mediaDevices.getUserMedia({
     video: true,
     audio: true
   });
 
   localVideo.srcObject = stream;
 
-  stream.getTracks().forEach(t => pc.addTrack(t, stream));
+  stream.getTracks().forEach(track => pc.addTrack(track, stream));
 
-  pc.ontrack = e => remoteVideo.srcObject = e.streams[0];
+  pc.ontrack = event => {
+    remoteVideo.srcObject = event.streams[0];
+  };
 
   const offer = await pc.createOffer();
   await pc.setLocalDescription(offer);
 
-  db.collection("calls").doc("call1").set({ offer });
-
-}
-
-async function answerCall() {
-
-  pc = new RTCPeerConnection(servers);
-
-  stream = await navigator.mediaDevices.getUserMedia({
-    video: true,
-    audio: true
+  db.collection("calls").add({
+    offer: offer,
+    createdAt: Date.now()
   });
-
-  localVideo.srcObject = stream;
-
-  stream.getTracks().forEach(t => pc.addTrack(t, stream));
-
-  pc.ontrack = e => remoteVideo.srcObject = e.streams[0];
-
-  const doc = await db.collection("calls").doc("call1").get();
-
-  await pc.setRemoteDescription(new RTCSessionDescription(doc.data().offer));
-
-  const answer = await pc.createAnswer();
-  await pc.setLocalDescription(answer);
-
-  db.collection("calls").doc("call1").update({ answer });
 
 }
 
 </script>
+
+<br>
+<a href="chat.html">💬 Chat</a>
 
 </body>
 </html>

@@ -2,233 +2,166 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>MiMia 💬</title>
+<title>MiMia</title>
 
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-storage.js"></script>
 
 <style>
 body {
+  margin: 0;
   font-family: Arial;
   background: #0b141a;
   color: white;
-  text-align: center;
 }
 
-.page { display: none; }
-.active { display: block; }
-
-.msg {
-  background: #202c33;
-  margin: 8px;
+.nav {
+  display: flex;
+  justify-content: space-around;
+  background: #075e54;
   padding: 10px;
-  border-radius: 10px;
-  max-width: 70%;
-}
-
-.me {
-  background: #005c4b;
-  margin-left: auto;
 }
 
 button {
-  background: #00a884;
+  background: #128c7e;
+  border: none;
   color: white;
   padding: 10px;
-  border-radius: 20px;
-  border: none;
+  border-radius: 5px;
 }
 
-input {
+.page {
+  display: none;
   padding: 10px;
+}
+
+.active {
+  display: block;
+}
+
+.msg {
+  background: #1f2c34;
   margin: 5px;
-  border-radius: 20px;
-  border: none;
-  background: #202c33;
-  color: white;
+  padding: 10px;
+  border-radius: 10px;
 }
 </style>
+
 </head>
 
 <body>
 
-<h2>MiMia 💬</h2>
-
-<!-- NAVIGATION -->
-<button onclick="goPage(1)">Auth</button>
-<button onclick="goPage(2)">Chat</button>
-<button onclick="goPage(3)">Privé</button>
-<button onclick="goPage(4)">Media</button>
-
-<!-- PAGE 1 -->
-<div id="page1" class="page active">
-  <h3>Connexion</h3>
-  <input id="email" placeholder="Email"><br>
-  <input id="password" type="password" placeholder="Mot de passe"><br>
-
-  <button onclick="register()">Créer compte</button>
-  <button onclick="login()">Connexion</button>
+<!-- NAV -->
+<div class="nav">
+  <button onclick="showPage('chat')">💬 Chat</button>
+  <button onclick="showPage('media')">🎵 Média</button>
+  <button onclick="showPage('calls')">📞 Appels</button>
 </div>
 
-<!-- PAGE 2 -->
-<div id="page2" class="page">
-  <h3>Chat global</h3>
+<!-- CHAT -->
+<div id="chat" class="page active">
 
-  <input id="message" placeholder="Message"><br>
-  <input type="file" id="fileInput"><br>
+  <div id="messages"></div>
+
+  <input id="msgInput" placeholder="Message...">
   <button onclick="sendMessage()">Envoyer</button>
 
-  <div id="chat"></div>
 </div>
 
-<!-- PAGE 3 -->
-<div id="page3" class="page">
-  <h3>Chat privé</h3>
+<!-- MEDIA -->
+<div id="media" class="page">
 
-  <input id="privateEmail" placeholder="Email ami"><br>
-  <input id="privateMsg" placeholder="Message"><br>
-  <button onclick="sendPrivate()">Envoyer</button>
-
-  <div id="privateChat"></div>
-
-  <h3>📞 Appels (prototype)</h3>
-  <video id="localVideo" autoplay muted width="150"></video>
-  <video id="remoteVideo" autoplay width="150"></video>
-</div>
-
-<!-- PAGE 4 -->
-<div id="page4" class="page">
-  <h3>🎵📹 Média</h3>
-
-  <input type="file" id="mediaFile" accept="audio/*,video/*"><br>
-  <button onclick="uploadMedia()">Télécharger</button>
-
-  <hr>
+  <input type="file" id="fileInput">
+  <button onclick="uploadMedia()">Upload</button>
 
   <div id="mediaList"></div>
+
+</div>
+
+<!-- CALLS -->
+<div id="calls" class="page">
+
+  <h3>📞 Appels (base)</h3>
+
+  <button onclick="startCall()">Appeler</button>
+
+  <p id="callStatus"></p>
+
 </div>
 
 <script>
-firebase.initializeApp({
-  apiKey: "AIzaSy...",
-  authDomain: "mi-mia.firebaseapp.com",
-  projectId: "mi-mia",
-  storageBucket: "mi-mia.firebasestorage.app",
-  messagingSenderId: "871745901536",
-  appId: "1:871745901536:web:cc3e037b967094942ed185"
-});
+/* 🔥 FIREBASE CONFIG (REMPLACE ICI) */
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_DOMAIN",
+  projectId: "YOUR_PROJECT",
+  storageBucket: "YOUR_BUCKET",
+  messagingSenderId: "YOUR_ID",
+  appId: "YOUR_APP_ID"
+};
 
-const auth = firebase.auth();
+firebase.initializeApp(firebaseConfig);
+
 const db = firebase.firestore();
 const storage = firebase.storage();
 
-let user = null;
+/* 🔁 NAVIGATION */
+function showPage(pageId) {
+  document.querySelectorAll('.page').forEach(p => {
+    p.classList.remove('active');
+  });
 
-/* NAVIGATION */
-function goPage(p) {
-  document.querySelectorAll(".page").forEach(pg => pg.classList.remove("active"));
-  document.getElementById("page"+p).classList.add("active");
+  document.getElementById(pageId).classList.add('active');
 }
 
-/* AUTH */
-auth.onAuthStateChanged(u => {
-  user = u;
-  if (u) loadMessages();
-});
-
-function register() {
-  auth.createUserWithEmailAndPassword(email.value, password.value);
-}
-
-function login() {
-  auth.signInWithEmailAndPassword(email.value, password.value);
-}
-
-/* ENCRYPT */
-function enc(t){return btoa(unescape(encodeURIComponent(t)));}
-function dec(t){return decodeURIComponent(escape(atob(t)));}
-
-/* CHAT GLOBAL */
+/* 💬 CHAT */
 function sendMessage() {
-  if (!user) return;
+  let msg = document.getElementById("msgInput").value;
+  if (msg === "") return;
 
   db.collection("messages").add({
-    text: enc(message.value),
-    email: user.email,
-    date: Date.now(),
-    seen: false
+    text: msg,
+    time: Date.now()
   });
 
-  message.value = "";
+  document.getElementById("msgInput").value = "";
 }
 
-function loadMessages() {
-  db.collection("messages")
-  .orderBy("date","desc")
-  .onSnapshot(snap => {
-
-    let html = "";
-
-    snap.forEach(doc => {
-      let d = doc.data();
-      let me = d.email === user.email;
-
-      if (!me && !d.seen) {
-        db.collection("messages").doc(doc.id).update({ seen: true });
-      }
-
-      html += `<div class="msg ${me ? "me" : ""}">
-        ${dec(d.text)} ${d.seen ? "✔✔" : "✔"}
-      </div>`;
-    });
-
-    chat.innerHTML = html;
-  });
-}
-
-/* PRIVATE */
-function sendPrivate() {
-  db.collection("privateMessages").add({
-    from: user.email,
-    to: privateEmail.value,
-    text: enc(privateMsg.value),
-    date: Date.now()
-  });
-
-  privateMsg.value = "";
-}
-
-db.collection("privateMessages").onSnapshot(snap => {
+db.collection("messages")
+.orderBy("time")
+.onSnapshot(snapshot => {
 
   let html = "";
 
-  snap.forEach(doc => {
-    let d = doc.data();
+  snapshot.forEach(doc => {
+    let data = doc.data();
 
-    if (d.from === user.email || d.to === user.email) {
-      html += `<div class="msg">${dec(d.text)}</div>`;
-    }
+    html += `
+      <div class="msg">
+        ${data.text}
+        <span style="float:right;">✔✔</span>
+      </div>
+    `;
   });
 
-  privateChat.innerHTML = html;
+  document.getElementById("messages").innerHTML = html;
 });
 
-/* MEDIA */
+/* 🎵 MEDIA */
 function uploadMedia() {
-  let file = mediaFile.files[0];
+  let file = document.getElementById("fileInput").files[0];
+
   if (!file) return;
 
-  let ref = storage.ref("media/" + Date.now() + "_" + file.name);
+  let ref = storage.ref("media/" + file.name);
 
-  ref.put(file).then(s => {
-    s.ref.getDownloadURL().then(url => {
+  ref.put(file).then(() => {
+    ref.getDownloadURL().then(url => {
 
       db.collection("media").add({
         url: url,
-        type: file.type,
-        date: Date.now()
+        time: Date.now()
       });
 
     });
@@ -236,42 +169,27 @@ function uploadMedia() {
 }
 
 db.collection("media")
-.onSnapshot(snap => {
+.onSnapshot(snapshot => {
 
   let html = "";
 
-  snap.forEach(doc => {
-    let d = doc.data();
+  snapshot.forEach(doc => {
+    let data = doc.data();
 
-    if (d.type.startsWith("video")) {
-      html += `<video src="${d.url}" controls width="90%"></video>`;
-    }
-
-    if (d.type.startsWith("audio")) {
-      html += `<audio src="${d.url}" controls></audio>`;
-    }
+    html += `
+      <div style="margin:10px;">
+        <video src="${data.url}" controls width="100%"></video>
+      </div>
+    `;
   });
 
-  mediaList.innerHTML = html;
+  document.getElementById("mediaList").innerHTML = html;
 });
 
-/* SMART PLAY */
-document.addEventListener("play", function(e) {
-  let media = document.querySelectorAll("audio,video");
-
-  media.forEach(m => {
-    if (m !== e.target) m.pause();
-  });
-}, true);
-
-/* CALL (BASE) */
-const peer = new RTCPeerConnection();
-
-navigator.mediaDevices.getUserMedia({video:true,audio:true})
-.then(stream => {
-  localVideo.srcObject = stream;
-  stream.getTracks().forEach(t => peer.addTrack(t, stream));
-});
+/* 📞 APPELS (BASIQUE) */
+function startCall() {
+  document.getElementById("callStatus").innerText = "Appel en cours...";
+}
 </script>
 
 </body>

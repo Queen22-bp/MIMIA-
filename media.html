@@ -1,74 +1,28 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html>
 <head>
 <meta charset="UTF-8">
-<title>Média - MiMia</title>
+<title>Music</title>
 
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-storage-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
-
-<style>
-body {
-  font-family: Arial;
-  margin: 0;
-  padding-bottom: 120px;
-}
-
-#list div {
-  padding: 10px;
-  border-bottom: 1px solid #ddd;
-  cursor: pointer;
-}
-
-#list div:hover {
-  background: #f2f2f2;
-}
-
-#player {
-  position: fixed;
-  bottom: 0;
-  width: 100%;
-  background: #111;
-  color: #fff;
-  padding: 10px;
-}
-
-button {
-  margin: 5px;
-}
-</style>
 
 </head>
 
 <body>
 
-<h2>🎵 Média (MiMia)</h2>
+<h2>Music</h2>
 
-<input type="file" id="fileInput"><br><br>
-<button onclick="upload()">⬆️ Upload</button>
-
-<hr>
+<input type="file" id="file"><br><br>
+<button onclick="upload()">Upload</button>
 
 <div id="list"></div>
 
-<!-- 🎧 PLAYER -->
-<div id="player">
-  <div id="nowPlaying">🎵 Rien en lecture</div>
-
-  <audio id="audioPlayer" controls style="width:100%;"></audio>
-
-  <div style="text-align:center;">
-    <button onclick="prevTrack()">⏮</button>
-    <button onclick="playPause()">▶️ / ⏸</button>
-    <button onclick="nextTrack()">⏭</button>
-  </div>
-</div>
+<audio id="audio" controls></audio>
 
 <script>
 
-/* 🔥 CONFIG FIREBASE */
 const firebaseConfig = {
   apiKey: "YOUR_API_KEY",
   authDomain: "YOUR_DOMAIN",
@@ -81,106 +35,51 @@ firebase.initializeApp(firebaseConfig);
 const storage = firebase.storage();
 const auth = firebase.auth();
 
-let playlist = [];
-let currentIndex = 0;
-
-const audio = document.getElementById("audioPlayer");
-const nowPlaying = document.getElementById("nowPlaying");
-
-/* 🔐 PROTECTION */
+/* AUTH */
 auth.onAuthStateChanged(user => {
-  if (!user) {
-    window.location.href = "login.html";
-  } else {
-    loadFiles();
-  }
+  if (!user) window.location.href = "login.html";
 });
 
-/* ⬆️ UPLOAD */
+/* UPLOAD */
 function upload() {
-  const file = fileInput.files[0];
-  if (!file) return;
-
-  const ref = storage.ref("media/" + file.name);
+  const file = file.files[0];
+  const ref = storage.ref("music/" + file.name);
 
   ref.put(file).then(() => {
-    alert("Upload réussi !");
-    loadFiles();
+    load();
   });
 }
 
-/* 📥 CHARGER MUSIQUES */
-function loadFiles() {
-  const ref = storage.ref("media");
+/* LOAD */
+function load() {
+  storage.ref("music").listAll().then(res => {
 
-  ref.listAll().then(res => {
     list.innerHTML = "";
-    playlist = [];
 
-    res.items.forEach((item, index) => {
+    res.items.forEach(item => {
       item.getDownloadURL().then(url => {
 
-        playlist.push({
-          name: item.name,
-          url: url
-        });
-
         list.innerHTML += `
-          <div onclick="playTrack(${index})">
+          <div onclick="play('${url}')">
             🎵 ${item.name}
           </div>
         `;
+
       });
     });
+
   });
 }
 
-/* ▶️ LIRE MUSIQUE */
-function playTrack(index) {
-  currentIndex = index;
-
-  const track = playlist[index];
-  if (!track) return;
-
-  audio.src = track.url;
+/* PLAY */
+function play(url) {
+  audio.src = url;
   audio.play();
-
-  nowPlaying.innerText = "🎵 " + track.name;
 }
 
-/* ⏯ PLAY / PAUSE */
-function playPause() {
-  if (audio.paused) {
-    audio.play();
-  } else {
-    audio.pause();
-  }
-}
-
-/* ⏭ NEXT */
-function nextTrack() {
-  if (currentIndex < playlist.length - 1) {
-    playTrack(currentIndex + 1);
-  }
-}
-
-/* ⏮ PREV */
-function prevTrack() {
-  if (currentIndex > 0) {
-    playTrack(currentIndex - 1);
-  }
-}
-
-/* 🔁 AUTO NEXT */
-audio.addEventListener("ended", () => {
-  nextTrack();
-});
+load();
 
 </script>
 
-<br>
-<a href="chat.html">💬 Chat</a> |
-<a href="calls.html">📞 Appels</a>
-
 </body>
-  </html>
+</html>

@@ -2,172 +2,176 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<title>Chat - MiMia</title>
-
-<!-- Firebase (compat pour simplifier) -->
-<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth-compat.js"></script>
+<title>MiMia - Fusion</title>
 
 <style>
 body {
-  font-family: Arial;
   margin: 0;
-  padding: 0;
+  font-family: Arial;
+  background: #121212;
+  color: white;
 }
 
-#messages {
-  height: 70vh;
-  overflow-y: auto;
+/* HEADER */
+.header {
+  padding: 15px;
+  background: #1f1f1f;
+  font-weight: bold;
+}
+
+/* NAVIGATION */
+.nav {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  display: flex;
+  background: #1f1f1f;
+}
+
+.nav button {
+  flex: 1;
+  padding: 15px;
+  background: none;
+  border: none;
+  color: white;
+}
+
+/* PAGES */
+.page {
+  display: none;
   padding: 10px;
 }
 
+.active {
+  display: block;
+}
+
+/* CHAT */
+.chat {
+  display: flex;
+  flex-direction: column;
+}
+
 .msg {
-  padding: 8px;
+  padding: 10px;
   margin: 5px;
   border-radius: 10px;
   max-width: 70%;
 }
 
 .me {
-  background: #dcf8c6;
-  margin-left: auto;
+  background: #25d366;
+  align-self: flex-end;
 }
 
 .other {
-  background: #eee;
+  background: #333;
+  align-self: flex-start;
 }
 
-#inputBox {
+/* MUSIC */
+.song {
   display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  cursor: pointer;
+}
+
+.song:hover {
+  background: #1f1f1f;
+}
+
+.song img {
+  width: 50px;
+  height: 50px;
+  border-radius: 5px;
+}
+
+/* PLAYER */
+.player {
+  position: fixed;
+  bottom: 60px;
+  width: 100%;
+  background: #181818;
   padding: 10px;
 }
 
-#msgInput {
-  flex: 1;
-  padding: 10px;
-}
 </style>
 
 </head>
 
 <body>
 
-<button onclick="logout()">🚪 Déconnexion</button>
+<div class="header">MiMia</div>
 
-<h2 style="text-align:center;">💬 Chat MiMia</h2>
-
-<div id="messages"></div>
-
-<div id="inputBox">
-  <input id="msgInput" placeholder="Écrire un message...">
+<!-- CHAT -->
+<div id="chat" class="page active chat">
+  <div id="messages"></div>
+  <input id="msgInput" placeholder="Message...">
   <button onclick="sendMessage()">Envoyer</button>
+</div>
+
+<!-- MUSIC -->
+<div id="music" class="page">
+  <h3>🎵 Musique</h3>
+  <div id="songs"></div>
+</div>
+
+<!-- PLAYER -->
+<div class="player">
+  <div id="now">🎵 Rien</div>
+  <audio id="audio" controls style="width:100%"></audio>
+</div>
+
+<!-- NAV -->
+<div class="nav">
+  <button onclick="showPage('chat')">💬</button>
+  <button onclick="showPage('music')">🎵</button>
 </div>
 
 <script>
 
-const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_DOMAIN",
-  projectId: "YOUR_PROJECT"
-};
-
-firebase.initializeApp(firebaseConfig);
-
-const db = firebase.firestore();
-const auth = firebase.auth();
-
-/* 🔐 AUTH PROTECTION */
-auth.onAuthStateChanged(user => {
-  if (!user) {
-    window.location.href = "login.html";
-  } else {
-    setOnline(user.uid);
-  }
-});
-
-/* 🟢 ONLINE STATUS */
-function setOnline(uid) {
-  db.collection("users").doc(uid).set({
-    status: "online",
-    lastSeen: Date.now()
-  }, { merge: true });
+/* NAVIGATION */
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(page).classList.add('active');
 }
 
-/* 💬 ENVOYER MESSAGE */
+/* CHAT (DEMO LOCAL) */
 function sendMessage() {
   const msg = msgInput.value;
   if (!msg) return;
 
-  const user = auth.currentUser;
-
-  db.collection("messages").add({
-    text: msg,
-    user: user.email,
-    uid: user.uid,
-    status: "sent",
-    time: Date.now()
-  });
-
+  messages.innerHTML += `<div class="msg me">${msg}</div>`;
   msgInput.value = "";
 }
 
-/* 📥 AFFICHER MESSAGES */
-db.collection("messages")
-.orderBy("time")
-.onSnapshot(snapshot => {
+/* MUSIQUE */
+const songs = [
+  { name: "Song 1", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3" },
+  { name: "Song 2", url: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3" }
+];
 
-  let html = "";
+const songsDiv = document.getElementById("songs");
+const audio = document.getElementById("audio");
+const now = document.getElementById("now");
 
-  snapshot.forEach(doc => {
-    const d = doc.data();
-    const currentUser = auth.currentUser;
-
-    let isMe = currentUser && d.uid === currentUser.uid;
-
-    html += `
-      <div class="msg ${isMe ? 'me' : 'other'}">
-        <b>${d.user}</b><br>
-        ${d.text}
-        <span style="float:right;">
-          ${d.status === "read" ? "✔✔" : "✔"}
-        </span>
-      </div>
-    `;
-  });
-
-  messages.innerHTML = html;
-
-  messages.scrollTop = messages.scrollHeight;
+songs.forEach((s, i) => {
+  songsDiv.innerHTML += `
+    <div class="song" onclick="playSong(${i})">
+      🎵 ${s.name}
+    </div>
+  `;
 });
 
-/* ✔✔ MARQUER COMME LU */
-db.collection("messages")
-.onSnapshot(snapshot => {
-  snapshot.forEach(doc => {
-    const d = doc.data();
-
-    if (auth.currentUser && d.uid !== auth.currentUser.uid) {
-      doc.ref.update({ status: "read" });
-    }
-  });
-});
-
-/* 🚪 LOGOUT */
-function logout() {
-  auth.signOut().then(() => {
-    window.location.href = "login.html";
-  });
+function playSong(i) {
+  audio.src = songs[i].url;
+  audio.play();
+  now.innerText = "🎵 " + songs[i].name;
 }
 
 </script>
 
-<br><br>
-
-<div style="text-align:center;">
-  <a href="media.html">🎵 Média</a> |
-  <a href="calls.html">📞 Appels</a>
-</div>
-
 </body>
-</html>
+  </html>

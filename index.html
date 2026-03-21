@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Chat - MiMia</title>
+
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-firestore.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js"></script>
+
+</head>
+
+<body>
+
+<button onclick="logout()">🚪 Déconnexion</button>
+
+<h2>💬 Chat</h2>
+
+<div id="messages"></div>
+
+<input id="msgInput">
+<button onclick="sendMessage()">Envoyer</button>
+
+<script>
+
+const firebaseConfig = {
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_DOMAIN",
+  projectId: "YOUR_PROJECT"
+};
+
+firebase.initializeApp(firebaseConfig);
+
+const db = firebase.firestore();
+const auth = firebase.auth();
+
+/* 🔒 PROTECTION */
+auth.onAuthStateChanged(user => {
+  if (!user) window.location.href = "login.html";
+});
+
+/* 💬 ENVOYER */
+function sendMessage() {
+  let msg = msgInput.value;
+  if (!msg) return;
+
+  db.collection("messages").add({
+    text: msg,
+    user: auth.currentUser.email,
+    time: Date.now(),
+    status: "sent"
+  });
+
+  msgInput.value = "";
+}
+
+/* 📥 AFFICHER */
+db.collection("messages")
+.orderBy("time")
+.onSnapshot(snapshot => {
+
+  let html = "";
+
+  snapshot.forEach(doc => {
+    let d = doc.data();
+
+    html += `
+      <div>
+        <b>${d.user}</b><br>
+        ${d.text}
+        <span style="float:right;">
+          ${d.status === "read" ? "✔✔" : "✔"}
+        </span>
+      </div>
+    `;
+  });
+
+  messages.innerHTML = html;
+});
+
+/* 🚪 LOGOUT */
+function logout() {
+  auth.signOut().then(() => {
+    window.location.href = "login.html";
+  });
+}
+
+</script>
+
+<br>
+<a href="media.html">🎵 Média</a> |
+<a href="calls.html">📞 Appels</a>
+
+</body>
+</html>

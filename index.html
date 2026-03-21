@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <title>MiMia 💬</title>
 
-<!-- Firebase -->
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
@@ -13,45 +12,42 @@
 <style>
 body {
   font-family: Arial;
-  background: #e5ddd5;
+  background: #0b141a;
+  color: white;
   text-align: center;
 }
 
-input, button {
-  padding: 10px;
-  margin: 5px;
-  width: 90%;
-  max-width: 400px;
-}
-
-button {
-  background: #075e54;
-  color: white;
-  border: none;
-  border-radius: 5px;
-}
-
-#chat {
-  max-width: 500px;
-  margin: auto;
-  text-align: left;
-}
+.page { display: none; }
+.active { display: block; }
 
 .msg {
-  background: white;
+  background: #202c33;
+  margin: 8px;
   padding: 10px;
-  margin: 10px;
   border-radius: 10px;
+  max-width: 70%;
 }
 
 .me {
-  background: #dcf8c6;
+  background: #005c4b;
   margin-left: auto;
 }
 
-img {
-  max-width: 100%;
-  border-radius: 10px;
+button {
+  background: #00a884;
+  color: white;
+  padding: 10px;
+  border-radius: 20px;
+  border: none;
+}
+
+input {
+  padding: 10px;
+  margin: 5px;
+  border-radius: 20px;
+  border: none;
+  background: #202c33;
+  color: white;
 }
 </style>
 </head>
@@ -60,33 +56,63 @@ img {
 
 <h2>MiMia 💬</h2>
 
-<input id="email" type="email" placeholder="Email"><br>
-<input id="password" type="password" placeholder="Mot de passe"><br>
+<!-- NAVIGATION -->
+<button onclick="goPage(1)">Auth</button>
+<button onclick="goPage(2)">Chat</button>
+<button onclick="goPage(3)">Privé</button>
+<button onclick="goPage(4)">Media</button>
 
-<button onclick="register()">Créer compte</button>
-<button onclick="login()">Se connecter</button>
-<button onclick="logout()">Déconnexion</button>
+<!-- PAGE 1 -->
+<div id="page1" class="page active">
+  <h3>Connexion</h3>
+  <input id="email" placeholder="Email"><br>
+  <input id="password" type="password" placeholder="Mot de passe"><br>
 
-<p id="status"></p>
+  <button onclick="register()">Créer compte</button>
+  <button onclick="login()">Connexion</button>
+</div>
 
-<hr>
+<!-- PAGE 2 -->
+<div id="page2" class="page">
+  <h3>Chat global</h3>
 
-<input id="message" placeholder="Ton message"><br>
-<input type="file" id="file"><br>
+  <input id="message" placeholder="Message"><br>
+  <input type="file" id="fileInput"><br>
+  <button onclick="sendMessage()">Envoyer</button>
 
-<button onclick="sendMessage()">Envoyer</button>
+  <div id="chat"></div>
+</div>
 
-<hr>
+<!-- PAGE 3 -->
+<div id="page3" class="page">
+  <h3>Chat privé</h3>
 
-<input id="privateEmail" placeholder="Email ami"><br>
-<button onclick="sendPrivate()">Message privé</button>
+  <input id="privateEmail" placeholder="Email ami"><br>
+  <input id="privateMsg" placeholder="Message"><br>
+  <button onclick="sendPrivate()">Envoyer</button>
 
-<div id="chat"></div>
+  <div id="privateChat"></div>
+
+  <h3>📞 Appels (prototype)</h3>
+  <video id="localVideo" autoplay muted width="150"></video>
+  <video id="remoteVideo" autoplay width="150"></video>
+</div>
+
+<!-- PAGE 4 -->
+<div id="page4" class="page">
+  <h3>🎵📹 Média</h3>
+
+  <input type="file" id="mediaFile" accept="audio/*,video/*"><br>
+  <button onclick="uploadMedia()">Télécharger</button>
+
+  <hr>
+
+  <div id="mediaList"></div>
+</div>
 
 <script>
-/* 🔥 CONFIG FIREBASE */
 firebase.initializeApp({
-  apiKey: "AIzaSyCsTZdce8EnHNc3za9BX6AJnfTOCqcCQf0",
+  apiKey: "AIzaSy...",
   authDomain: "mi-mia.firebaseapp.com",
   projectId: "mi-mia",
   storageBucket: "mi-mia.firebasestorage.app",
@@ -100,109 +126,61 @@ const storage = firebase.storage();
 
 let user = null;
 
-/* 🔐 AUTH */
+/* NAVIGATION */
+function goPage(p) {
+  document.querySelectorAll(".page").forEach(pg => pg.classList.remove("active"));
+  document.getElementById("page"+p).classList.add("active");
+}
+
+/* AUTH */
 auth.onAuthStateChanged(u => {
   user = u;
-
-  if (u) {
-    status.innerText = "Connecté : " + u.email;
-    loadMessages();
-  }
+  if (u) loadMessages();
 });
 
-/* 🔑 REGISTER */
 function register() {
-  auth.createUserWithEmailAndPassword(email.value, password.value)
-  .catch(e => alert(e.message));
+  auth.createUserWithEmailAndPassword(email.value, password.value);
 }
 
-/* 🔑 LOGIN */
 function login() {
-  auth.signInWithEmailAndPassword(email.value, password.value)
-  .catch(e => alert(e.message));
+  auth.signInWithEmailAndPassword(email.value, password.value);
 }
 
-/* 🚪 LOGOUT */
-function logout() {
-  auth.signOut();
-}
+/* ENCRYPT */
+function enc(t){return btoa(unescape(encodeURIComponent(t)));}
+function dec(t){return decodeURIComponent(escape(atob(t)));}
 
-/* 🔐 ENCRYPTION SIMPLE */
-function encrypt(t) {
-  return btoa(t);
-}
-
-function decrypt(t) {
-  return atob(t);
-}
-
-/* 💬 ENVOI MESSAGE */
+/* CHAT GLOBAL */
 function sendMessage() {
   if (!user) return;
 
-  let text = encrypt(message.value);
-  let file = document.getElementById("file").files[0];
-
-  if (!text && !file) return;
-
-  if (file) {
-    let ref = storage.ref("images/" + file.name);
-
-    ref.put(file).then(s => {
-      s.ref.getDownloadURL().then(url => {
-        db.collection("messages").add({
-          text,
-          image: url,
-          email: user.email,
-          date: Date.now(),
-          likes: []
-        });
-      });
-    });
-  } else {
-    db.collection("messages").add({
-      text,
-      email: user.email,
-      date: Date.now(),
-      likes: []
-    });
-  }
+  db.collection("messages").add({
+    text: enc(message.value),
+    email: user.email,
+    date: Date.now(),
+    seen: false
+  });
 
   message.value = "";
 }
 
-/* 📥 CHARGEMENT */
 function loadMessages() {
   db.collection("messages")
-  .orderBy("date", "desc")
-  .limit(20)
-  .onSnapshot(snapshot => {
+  .orderBy("date","desc")
+  .onSnapshot(snap => {
 
     let html = "";
 
-    snapshot.forEach(doc => {
+    snap.forEach(doc => {
       let d = doc.data();
-      let me = user && d.email === user.email;
+      let me = d.email === user.email;
 
-      let text = "";
-
-      try {
-        text = decrypt(d.text);
-      } catch {
-        text = d.text;
+      if (!me && !d.seen) {
+        db.collection("messages").doc(doc.id).update({ seen: true });
       }
 
       html += `<div class="msg ${me ? "me" : ""}">
-        <b>${d.email}</b><br><br>
-        ${text}<br><br>`;
-
-      if (d.image) {
-        html += `<img src="${d.image}"><br>`;
-      }
-
-      html += `
-        ❤️ ${(d.likes || []).length}<br>
-        <button onclick="like('${doc.id}')">Like</button>
+        ${dec(d.text)} ${d.seen ? "✔✔" : "✔"}
       </div>`;
     });
 
@@ -210,26 +188,90 @@ function loadMessages() {
   });
 }
 
-/* ❤️ LIKE */
-function like(id) {
-  db.collection("messages").doc(id).update({
-    likes: firebase.firestore.FieldValue.arrayUnion(user.email)
-  });
-}
-
-/* 💌 MESSAGE PRIVÉ */
+/* PRIVATE */
 function sendPrivate() {
-  if (!user) return;
-
   db.collection("privateMessages").add({
     from: user.email,
     to: privateEmail.value,
-    text: encrypt(message.value),
+    text: enc(privateMsg.value),
     date: Date.now()
   });
 
-  message.value = "";
+  privateMsg.value = "";
 }
+
+db.collection("privateMessages").onSnapshot(snap => {
+
+  let html = "";
+
+  snap.forEach(doc => {
+    let d = doc.data();
+
+    if (d.from === user.email || d.to === user.email) {
+      html += `<div class="msg">${dec(d.text)}</div>`;
+    }
+  });
+
+  privateChat.innerHTML = html;
+});
+
+/* MEDIA */
+function uploadMedia() {
+  let file = mediaFile.files[0];
+  if (!file) return;
+
+  let ref = storage.ref("media/" + Date.now() + "_" + file.name);
+
+  ref.put(file).then(s => {
+    s.ref.getDownloadURL().then(url => {
+
+      db.collection("media").add({
+        url: url,
+        type: file.type,
+        date: Date.now()
+      });
+
+    });
+  });
+}
+
+db.collection("media")
+.onSnapshot(snap => {
+
+  let html = "";
+
+  snap.forEach(doc => {
+    let d = doc.data();
+
+    if (d.type.startsWith("video")) {
+      html += `<video src="${d.url}" controls width="90%"></video>`;
+    }
+
+    if (d.type.startsWith("audio")) {
+      html += `<audio src="${d.url}" controls></audio>`;
+    }
+  });
+
+  mediaList.innerHTML = html;
+});
+
+/* SMART PLAY */
+document.addEventListener("play", function(e) {
+  let media = document.querySelectorAll("audio,video");
+
+  media.forEach(m => {
+    if (m !== e.target) m.pause();
+  });
+}, true);
+
+/* CALL (BASE) */
+const peer = new RTCPeerConnection();
+
+navigator.mediaDevices.getUserMedia({video:true,audio:true})
+.then(stream => {
+  localVideo.srcObject = stream;
+  stream.getTracks().forEach(t => peer.addTrack(t, stream));
+});
 </script>
 
 </body>
